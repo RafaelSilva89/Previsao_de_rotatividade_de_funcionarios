@@ -1,0 +1,83 @@
+{
+  "data_treino": "2026-10-24 18:05",
+  "modelo": "Regressão Logística ajustado, sem balanceamento (Pipeline: one-hot + padronização + modelo)",
+  "arquivo": "modelo_rotatividade.pkl",
+  "treinado_com": "1.176 funcionários (treino + validação). 190 saídas",
+  "colunas_de_entrada": [
+    "viagens",
+    "departamento",
+    "area_formacao",
+    "cargo",
+    "estado_civil",
+    "idade",
+    "distancia_casa",
+    "escolaridade",
+    "satisfacao_ambiente",
+    "envolvimento",
+    "nivel_cargo",
+    "satisfacao_trabalho",
+    "salario_mensal",
+    "empresas_anteriores",
+    "hora_extra",
+    "aumento_salarial_pct",
+    "avaliacao_desempenho",
+    "satisfacao_relacionamento",
+    "nivel_acoes",
+    "anos_experiencia",
+    "treinamentos_ano",
+    "equilibrio_vida",
+    "anos_empresa",
+    "anos_cargo_atual",
+    "anos_ultima_promocao",
+    "anos_gestor_atual",
+    "satisfacao_media",
+    "anos_por_empresa",
+    "fracao_carreira_na_empresa"
+  ],
+  "alvo": "saiu (1 = saiu da empresa, 0 = ficou)",
+  "limiar_recomendado": 0.34,
+  "criterio_do_limiar": "custo mínimo na validação: saída não prevista = US$ 7,645; abordagem = 1/5 disso",
+  "metricas_teste": {
+    "Acurácia": 0.8673,
+    "Precisão": 0.6053,
+    "Recall (Sensibilidade)": 0.4894,
+    "F1-Score": 0.5412,
+    "PR-AUC": 0.5868,
+    "AUC-ROC": 0.8059
+  },
+  "intervalo_95_teste": {
+    "PR-AUC": [
+      0.47,
+      0.702
+    ],
+    "Recall": [
+      0.34,
+      0.638
+    ],
+    "Precisão": [
+      0.468,
+      0.744
+    ]
+  },
+  "resultado_teste_dolares": {
+    "Custo sem modelo": 359315.0,
+    "Custo com o modelo": 241582.0,
+    "Economia": 117733.0,
+    "Economia (%)": 0.33,
+    "Abordados": 38.0,
+    "Saídas previstas": 23.0,
+    "Saídas no grupo": 47.0
+  },
+  "hiperparametros": {
+    "C": 0.17885301261862016,
+    "penalty": "l2",
+    "solver": "liblinear"
+  },
+  "avisos": [
+    "Base fictícia (IBM): as conclusões valem para esta base, não para uma empresa real.",
+    "O modelo aponta associação, não causa: hora extra alta pode ser sintoma, não motivo.",
+    "O limiar depende da premissa de custo (abordagem = 1/5 da reposição).",
+    "Não use o modelo para decisões punitivas: ele serve para priorizar conversas de retenção.",
+    "O gênero foi retirado do modelo de propósito (atributo sensível); não o reintroduza."
+  ]
+}

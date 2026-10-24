@@ -1,222 +1,270 @@
-# Previsão de rotatividade de funcionários
-Este repositório contém script para prever quais funcionários têm alto risco de churn (probabilidade de um funcionário deixar a empresa).
+# 👥 Previsão de Rotatividade de Funcionários
+
+**Quem tem mais chance de sair da empresa, por quê, e com quem o RH deve conversar primeiro.**
 
 <div align="center">
-<img src="Imagens/Capa_desempenho_funcionario.PNG" width="500px">
+<img src="Imagens/Capa_desempenho_funcionario.PNG" width="450px">
 </div>
-</br>
 
+[![Testes](https://github.com/RafaelSilva89/Previsao_de_rotatividade_de_funcionarios/actions/workflows/testes.yml/badge.svg)](https://github.com/RafaelSilva89/Previsao_de_rotatividade_de_funcionarios/actions/workflows/testes.yml)
 
-# _Objetivo do projeto_
+**Python · Pandas · Scikit-learn · Regressão Logística · XGBoost · LightGBM · SciPy · Pytest · GitHub Actions · Streamlit · CRISP-DM**
 
-<img src="Imagens/Capa2_desempenho_funcionario.PNG" width="220px" align='right'>
+| 📊 Destaques | |
+|---|---|
+| Base | **1.470 funcionários** (IBM HR Analytics, dados fictícios), dos quais **16,1% saíram** |
+| Maior fator de risco | **Hora extra**: chance de sair **3,8x** maior; no cargo júnior (nível 1) com hora extra, **52,6%** saem |
+| Modelo | Abordando as **30 pessoas** de maior risco (10% do teste), o RH encontra **20 das 47 saídas**: **4x mais** que ao acaso |
+| Resultado em dólares | Com o limiar escolhido pelo custo, a empresa gasta **32,8% menos** com reposição no teste (US$ 117.733), numa premissa de custo explícita |
+| Qualidade | A v2 mostrou que a **acurácia de 84% da v1 era o acerto de quem chuta "todo mundo fica"**, que o "Random Forest com 100%" foi avaliado em dados já vistos, e **tirou o gênero do modelo** sem perda de desempenho |
+| Entrega | Notebook CRISP-DM, **16 testes automatizados** (GitHub Actions) e **app Streamlit** com o risco de cada funcionário e a lista de prioridade do RH |
 
-<p align = 'left'>
+---
 
-Utilizando dados e técnicas de análise de dados, para identificar padrões e tendências no processo de contratação e retenção e fazer um modelo para prever quais funcionários têm alto risco de churn (probabilidade de um funcionário deixar a empresa).
-<p>
+## 📑 Sumário
 
-<br>
+1. [Contexto do problema](#1-contexto-do-problema)
+2. [Objetivo](#2-objetivo)
+3. [Base de dados](#3-base-de-dados)
+4. [Estrutura do projeto](#4-estrutura-do-projeto)
+5. [Como executar](#5-como-executar)
+6. [Etapas do projeto (CRISP-DM)](#6-etapas-do-projeto-crisp-dm)
+7. [Principais descobertas da análise exploratória](#7-principais-descobertas-da-análise-exploratória)
+8. [Construção do modelo](#8-construção-do-modelo)
+9. [Resultado do modelo](#9-resultado-do-modelo)
+10. [App interativo (Streamlit)](#10-app-interativo-streamlit)
+11. [O que mudou da v1 para a v2](#11-o-que-mudou-da-v1-para-a-v2)
+12. [Insights](#12-insights)
+13. [Limites](#13-limites)
+14. [Próximos passos](#14-próximos-passos)
 
-# _1. Problema de Negócio_
+---
 
-Contratar e reter funcionários são tarefas extremamente complexas que exigem capital, tempo e habilidades.
+## 1. Contexto do problema
 
-A contratação de um novo funcionário custa em média $7645 (em uma empresa com aproximadamente 500 funcionários) e demora mais ou menos 52 dias para um funcionário ocupar de fato sua nova posição.
+<img src="Imagens/Capa2_desempenho_funcionario.PNG" width="180px" align="right">
 
-Foi entendido que o problema apresentado pelo time de negócios é a dificuldade em manter funcionários na empresa, para isso, foi solicitado um projeto para a previsão de funcionários com tendências de para sair do emprego.
+Perder um funcionário custa caro: recrutamento, tempo até a vaga ser ocupada e treinamento do substituto. Uma estimativa citada na versão original é de **US$ 7.645** por contratação, com cerca de 52 dias até a nova pessoa assumir ([fonte](https://toggl.com/blog/cost-of-hiring-an-employee)).
 
-Fonte: https://toggl.com/blog/cost-of-hiring-an-employee
+O RH não consegue conversar com todos ao mesmo tempo. Ele precisa saber **com quem falar primeiro** e **por quê**.
 
-Neste cenário fictício, nossa fonte de dados é um arquivo csv do Kaggle [clicando aqui](https://toggl.com/blog/cost-of-hiring-an-employee).
+## 2. Objetivo
 
-<br>
+> **Perguntas de negócio:**
+> 1. **O que está associado à saída** de um funcionário?
+> 2. Dá para **prever quem vai sair**? Com que precisão, comparado a escolher ao acaso?
+> 3. Com quantas pessoas o RH deve **conversar** para que a ação compense o custo?
+> 4. Quanto a empresa **economiza** usando o modelo?
 
-# _2. Justificativa_
+## 3. Base de dados
 
-- **Por quê:** A contratação e retenção eficientes de funcionários são fundamentais para o sucesso de qualquer empresa, mas também são tarefas complexas e caras. A utilização de dados e técnicas de análise de dados pode ajudar a identificar padrões e tendências no processo de contratação e retenção e desenvolver modelos preditivos para prever o churn de funcionários. Isso pode levar a uma redução de custos, tempo e esforço envolvidos na contratação e retenção, bem como a uma melhoria geral da eficiência operacional da empresa.
-- **Como:** A empresa pode utilizar uma abordagem de análise de dados para identificar padrões e tendências no processo de contratação e retenção. Para o desenvolvimento de modelos de machine learning, podem ser utilizados algoritmos como regressão logística, árvores de decisão, redes neurais e random forest. Os dados podem ser coletados de várias fontes, incluindo entrevistas com funcionários, avaliações de desempenho, dados demográficos, entre outros. A implementação do modelo preditivo pode ajudar a identificar funcionários com alto risco de churn, permitindo a adoção de medidas preventivas para reduzir a rotatividade.
-- **O quê:** O projeto envolve a análise de dados e a implementação de modelos de machine learning para otimizar o processo de contratação e retenção de funcionários. O resultado final será um relatório ou apresentação detalhando a análise de dados, as soluções propostas e os resultados dos modelos preditivos. A implementação do modelo pode incluir medidas preventivas para reduzir a rotatividade de funcionários.
+A base é a [IBM HR Analytics Employee Attrition & Performance](https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset) (Kaggle), salva em `Datasets/Human_Resources.csv`. Ela é **fictícia**: foi criada por cientistas de dados da IBM para ensino.
 
-<br>
+| Grupo | Colunas (traduzidas) |
+|---|---|
+| 🎯 Alvo | `saiu` (1 = saiu da empresa) |
+| Perfil | idade, gênero, estado civil, escolaridade, área de formação, distância de casa |
+| Cargo e salário | departamento, cargo, nível do cargo (1 a 5), salário mensal, último aumento, nível de ações |
+| Rotina | hora extra, viagens a trabalho |
+| Pesquisas internas | satisfação com o ambiente, o trabalho e o relacionamento, equilíbrio vida-trabalho, envolvimento (1 a 4) |
+| Carreira | anos de experiência, de empresa, no cargo, com o gestor, desde a última promoção, empresas anteriores |
+| ⚠️ Sem uso | 3 colunas constantes, o número de registro e 3 "taxas" sem relação com o salário |
 
-# _3. Premissas_
+## 4. Estrutura do projeto
 
-As variáveis originais do conjuto de dados são:<br>
+```
+Previsao_de_rotatividade_de_funcionarios/
+├── Datasets/
+│   └── Human_Resources.csv             # base original (IBM HR Analytics)
+├── Imagens/                            # gráficos gerados pelos notebooks
+├── Model/
+│   ├── modelo_rotatividade.pkl         # pipeline final + limiar + valores típicos (usado pelo app)
+│   ├── modelo_rotatividade.json        # ficha do modelo (métricas, premissa de custo, avisos)
+│   └── variaveis_modelo.pkl            # artefatos da versão original
+├── docs/
+│   └── decisoes_analiticas.md          # registro das decisões do projeto (DA-01 a DA-11)
+├── reports/
+│   ├── comparacao_modelos.csv          # métricas dos 5 algoritmos na validação
+│   └── previsoes_teste.csv             # probabilidades do teste (usadas pelo app)
+├── Notebooks/
+│   ├── Previsão de rotatividade de funcionários - EDA.ipynb             # versão original (análise)
+│   ├── Previsão de rotatividade de funcionários - Modelo de Churn.ipynb # versão original (modelo)
+│   └── Previsão de rotatividade de funcionários - v2.ipynb              # v2: análise + modelo (CRISP-DM)
+├── src/
+│   ├── config.py                       # caminhos, semente, colunas e premissa de custo
+│   ├── dados.py                        # leitura, tradução, variáveis criadas e preparo de um funcionário
+│   ├── estatistica.py                  # testes das hipóteses (com tamanho do efeito) e regra do IQR
+│   ├── selecao.py                      # seleção de variáveis (Random Forest + Informação Mútua)
+│   ├── avaliacao.py                    # métricas, limiar, custo, ganho sobre o acaso, bootstrap, ficha e explicação de cada previsão
+│   └── graficos.py                     # gráficos e formatação em português
+├── tests/
+│   ├── test_funcoes.py                 # 12 testes das funções de src/
+│   └── test_app.py                     # 4 testes do app (AppTest do Streamlit)
+├── .github/workflows/testes.yml        # roda os testes a cada push (GitHub Actions)
+├── app.py                              # app Streamlit
+├── pytest.ini
+├── requirements.txt
+└── README.md
+```
 
-Variável | Definição
------------- | -------------
-Age | idade das pessoas|
-Attrition | variável resposta|
-BusinessTravel | indica se a pessoa faz viajem na empresa|
-DailyRate | cálculo do sálario da pessoa|
-Department | departamento onde a pessoa trabalha|
-DistanceFromHome | distância da casa para empresa em Km|
-Education | indica o grau de escolaridade|
-EducationField | indica a área da pessoa de atuação na empresa|
-EmployeeCount | é como se fosse a contagem dos funcionários|
-EmployeeNumber | número dos funcionários, como se fosse o registro do funcionário|
-EnvironmentSatisfaction | nível de satisfação do funcionário com o ambiente de trabalho|
-Gender | gênero|
-HourlyRate | indica o número de horas trabalhadas|
-JobInvolvement | envolvimento no trabalho|
-JobLevel | nível de trabalho|
-JobRole | nome das profisões|
-JobSatisfaction | satisfação no trabalho|
-MaritalStatus | estado civil|
-MonthlyIncome | renda mensal|
-MonthlyRate | taxa mensal|
-NumCompaniesWorked | número de empresas que o fúnionario trabalhou|
-Over18 | indica se o funcionário tem mais de 18 anos|
-OverTime | indica se o funcionário faz horas extras|
-PercentSalaryHike | indica o percentual de aumento que o funcionário ganhou|
-PerformanceRating |avaliação de desempenho do funcionário|
-RelationshipSatisfaction | indica o nível de satisfação|
-StandardHours | quantas horas o funcionário trabalha|
-StockOptionLevel | indica se a empresa tem ações na bolsa de valores|
-TotalWorkingYears | indica quanto tempo o funcionário está trabalhando na empresa|
-TrainingTimesLastYear | tempo em treinamento|
-WorkLifeBalance | equilíbrio entre vida profissional|
-YearsAtCompany | quantos anos o fucionário trabalhou na empresa|
-YearsInCurrentRole | quantos anos de atuação na função atual|
-YearsSinceLastPromotion | anos desde a última promoção|
-YearsWithCurrManage | quantos anos está trabalhando como gerente|
+## 5. Como executar
 
-<br>
+```bash
+# 1. Clonar o repositório
+git clone https://github.com/RafaelSilva89/Previsao_de_rotatividade_de_funcionarios.git
+cd Previsao_de_rotatividade_de_funcionarios
 
-# _4. Planejamento da Solução_
+# 2. Instalar as dependências
+pip install -r requirements.txt
 
-Este projeto foi separado em duas partes:
-1. Um arquivo para fazer Análise exploratória dos dados, com objetivo de analisar os dados para gerar insights.
-2. O segundo arquivo tem a ênfase na construção de um modelo para fazer a classificação dos funcionários.
+# 3. Rodar os testes
+pytest
 
+# 4. Abrir o notebook e executar todas as células (gera o modelo usado pelo app)
+jupyter notebook "Notebooks/Previsão de rotatividade de funcionários - v2.ipynb"
 
-<br>
+# 5. Abrir o app
+streamlit run app.py
+```
 
-# _5. Insights_
+## 6. Etapas do projeto (CRISP-DM)
 
-*Resumo dos insights durante análise exploratória de dados (EDA):*
+| Fase | O que foi feito |
+|---|---|
+| **01. Entendimento do negócio** | Definição das 4 perguntas e da premissa de custo |
+| **02. Preparação dos dados** | Tradução da base, colunas sem informação, inconsistências, outliers pela regra do IQR e EDA com 13 hipóteses (cada uma com teste estatístico e tamanho do efeito) |
+| **03. Modelagem** | Divisão 60/20/20 estratificada, 4 estratégias de balanceamento, seleção de variáveis, 5 algoritmos com validação cruzada, ajuste fino, limiar pelo custo, calibração e teste anti-vazamento |
+| **04. Avaliação** | Resultado no teste com intervalo de confiança, em dólares e por grupo (departamento, hora extra, gênero), e variáveis mais importantes |
+| **05. Implantação** | Modelo salvo com ficha, simulação de perfis, curva "modelo × sorteio" e app Streamlit |
 
-**1º Gráfico:**
+## 7. Principais descobertas da análise exploratória
 
 <div align="center">
-<img src="Imagens/Condicao_Funcionarios.png" width="700px">
+<img src="Imagens/H8 Nivel x hora extra.png" width="600px">
 </div>
-</br>
 
-**Nota:**
-- Temos uma proporção de 20% de funcionários com chance em sair da empresa.
-- E os dados estão desbalanceados que para aprendizado do modelo, vamos ter que fazer o balanceamento.
+| # | Hipótese | Resultado | Evidência |
+|---|---|---|---|
+| **H1** | Hora extra → sai mais | ✅ Verdadeira | Chance **3,8x** maior |
+| **H2** | Mais jovens saem mais | ✅ Verdadeira | Idade mediana de **32** contra **36** anos |
+| **H3** | Quem ganha menos sai mais | ✅ Verdadeira | **US$ 3.202** contra **US$ 5.204** |
+| **H4** | Solteiros saem mais | ✅ Verdadeira | Efeito pequeno |
+| **H5** | Quem viaja muito sai mais | ✅ Efeito pequeno | — |
+| **H6** | Quem mora longe sai mais | ⚠️ Efeito pequeno | — |
+| **H7** | Representantes de vendas saem mais | ✅ Verdadeira | **39,8%** saem, contra **2,5%** dos diretores de pesquisa |
+| **H8** | Júnior + hora extra multiplicam o risco | ✅ **Maior efeito** | **52,6%** saem no nível 1 com hora extra |
+| **H9** | Menos satisfeito → sai mais | ⚠️ Parcial | A satisfação **média** pesa mais que cada pesquisa |
+| **H10** | Pouco tempo de casa → sai mais | ✅ Verdadeira | Mas anos sem promoção, sozinho, quase não difere |
+| **H11** | Sem ações → sai mais | ✅ Confundida | **100%** dos solteiros estão sem ações |
+| **H12** | As "taxas" são ruído | ✅ Verdadeira | Correlação com o salário de ~**0** |
+| **H13** | Homens e mulheres saem igual | ✅ Verdadeira | **14,8%** contra **17,0%** (p = 0,29) |
 
-**2º Gráfico:**
+> 🧪 **Testes estatísticos:** qui-quadrado + V de Cramér (e odds ratio) para as categorias, Mann-Whitney + correlação de postos para as numéricas. Com efeitos de 0,1 a 0,36, quase todos são **pequenos a médios**: nenhuma variável sozinha explica a saída. O que importa é o tamanho do efeito, não o p.
+
+## 8. Construção do modelo
+
+| Etapa | Como foi feito |
+|---|---|
+| **Pipeline** | One-hot das categorias e padronização das numéricas, ajustados só no treino e salvos junto com o modelo |
+| **Divisão** | 60% treino (882), 20% validação (294) e 20% teste (294), estratificada; o teste é aberto uma única vez |
+| **Balanceamento** | Comparamos 4 estratégias. **Sem balanceamento** venceu (PR-AUC de 0,638 contra 0,597 com peso da classe) e manteve as probabilidades realistas. O ClusterCentroids da v1, que descartava 82% dos dados, foi o pior |
+| **Variáveis** | 29: sem as 3 "taxas" (ruído), com 3 criadas (satisfação média, anos por empresa, fração da carreira na empresa) e **sem o gênero** (atributo sensível; veja abaixo) |
+| **Algoritmos** | Regressão Logística, Naive Bayes, Random Forest, XGBoost e LightGBM, com validação cruzada de 5 dobras × 3 repetições |
+| **Escolha** | **Regressão Logística** ajustada: PR-AUC de **0,648 ± 0,046**, contra 0,564 do segundo colocado. As árvores decoravam o treino |
+| **Limiar** | **0,34**, o de menor custo na validação: repor custa US$ 7.645 e abordar custa 1/5 disso |
+| **Anti-vazamento** | Avaliado em dados já vistos, o Random Forest tira **100%** em tudo; de forma honesta, PR-AUC de **0,555** |
 
 <div align="center">
-<img src="Imagens/Ficar_Sair.png" width="700px">
+<img src="Imagens/Curva de custo.png" width="700px">
 </div>
-</br>
 
-**Nota:**
-- Pessoas entre 34 há 36 anos é grupo onde a maioria ficam na empresa e uma pequena parcela das pessoas sai.
-- Pessoas entre 18 há 20 anos supera a quantidade de pessoas que não tem chance em sair da empresa.
+### ⚖️ Por que o gênero ficou fora do modelo (e quanto isso custou)
 
-**3º Gráfico:**
+Na base, homens e mulheres saem na mesma proporção (17,0% e 14,8%; H13). Mesmo assim, quando recebia o gênero, o modelo dava às mulheres uma chance de sair **24% menor** que a dos homens com todo o resto igual. Usar gênero para decidir com quem o RH conversa é um problema ético e legal (discriminação, LGPD), então ele foi retirado. A auditoria abaixo treina o mesmo modelo com e sem o gênero, pelo mesmo processo, e compara no teste:
+
+| | Com gênero | Sem gênero (modelo final) |
+|---|---|---|
+| PR-AUC (validação cruzada do treino) | 0,650 | **0,647** |
+| PR-AUC (teste) | 0,598 | **0,587** |
+| Saídas encontradas no teste (limiar de menor custo) | 21 de 47 | **23 de 47** |
+| F1 no teste | 0,519 | **0,541** |
+| Economia vs. sem modelo | 30,2% | **32,8%** |
+
+**Resultado:** a qualidade da ordem de risco cai muito pouco (0,003 a 0,011 de PR-AUC, bem menos que a incerteza do teste), e o resultado prático, com o limiar pelo custo, até melhora um pouco. As diferenças são ruído de uma base pequena: **retirar o gênero não teve custo real de desempenho**.
+
+## 9. Resultado do modelo
+
+| Teste (294 funcionários, 47 saídas) | Modelo (limiar 0,34) | Chutar "todo mundo fica" |
+|---|---|---|
+| Saídas encontradas (recall) | **23 de 47 (49%)** | 0 |
+| Dos apontados, quantos saem (precisão) | **61%** | — |
+| PR-AUC | **0,587** (IC 95%: 0,47 a 0,70) | 0,16 |
+| Acurácia | 86,7% | 84,0% |
+| Custo com reposição | **US$ 241.582** | US$ 359.315 |
+
+- **4x mais eficiente que o acaso:** abordando 30 pessoas, o RH encontra 20 saídas, contra 4,8 num sorteio.
+- **Bem calibrado:** quem recebe 10% a 20% de risco sai 13,8% das vezes.
+- **Onde erra:** encontra 88% das saídas em Vendas, mas só 31% em Pesquisa e Desenvolvimento, e não prevê saídas de veteranos com décadas de casa (provavelmente aposentadorias).
+- **Justiça:** recall de 56% nas mulheres e 45% nos homens, diferença dentro da incerteza do teste.
 
 <div align="center">
-<img src="Imagens/IdadeChanceSair.png" width="700px">
+<img src="Imagens/Odds ratio regressao logistica.png" width="650px">
 </div>
-</br>
 
+## 10. App interativo (Streamlit)
 
-**Nota:**
-- Podemos observar que conforme a idade vai aumentando a tendência das pessoas é que fiquem na empresa.
-- A partir da idade de 31 anos segue uma tendência de queda das pessoas que tem chance em sair da empresa.
-- Podemos informar para o RH a fazer uma entrevista com os funcionários que tem uma idade menor de 32 anos.
+O app tem 3 abas:
+1. **🧑 Funcionário:** informe o perfil (idade, salário, hora extra, cargo, satisfação...) e receba a **probabilidade de saída**, a comparação com a taxa média e a recomendação (conversar ou acompanhar). Logo abaixo, o app mostra **as 3 variáveis que mais pesaram** para aquela pessoa, comparada ao funcionário típico da empresa. Exemplo: *"Hora extra: sim (típico: não) → multiplica a chance de sair por 5,1"*. Assim o RH sabe **o que conversar**. É o que o modelo associa ao risco, não necessariamente a causa.
+2. **📋 Lista de prioridade do RH:** escolha quantas pessoas o RH consegue abordar e veja **quantas saídas** o modelo encontraria no teste, contra o acaso.
+3. **ℹ️ Sobre o modelo:** métricas, limiar e avisos de uso.
 
-**4º Gráfico:**
+```bash
+streamlit run app.py
+```
 
-<div align="center">
-<img src="Imagens/Densidade_probabilidade_1.png" width="700px">
-</div>
-</br>
+> ℹ️ O app usa `Model/modelo_rotatividade.pkl` e `reports/previsoes_teste.csv`, gerados ao executar o notebook até a Fase 05.
 
-**Nota:**
+## 11. O que mudou da v1 para a v2
 
-O gráfico mostra a distribuição de probabilidade da variável.
-- A maioria das pessoas que sairam da empresa, elas moram entre 1 a 10 km de casa até o trabalho.
-- A densidade das pessoas que ficam na empresa está entre 1 á 3 km e proporção de pessoas moram maior que 10 km é menor que a proporção das pessoas que sairam.
+Os dois notebooks originais foram mantidos em `Notebooks/` para mostrar a evolução.
 
+| # | Versão original (v1) | Problema | Versão v2 |
+|---|---|---|---|
+| 1 | "84% de chance de acertar" | É o acerto de quem chuta "todo mundo fica" (84,0% no teste) | Métrica principal: **PR-AUC** da classe "saiu", com recall, precisão e custo |
+| 2 | Encoder e scaler reajustados na validação e no teste; `.pkl` salvo com os ajustados no teste | Cada conjunto numa escala; o app aplicaria outra transformação | Tudo num `Pipeline` ajustado só no treino |
+| 3 | Random Forest com **100%** em tudo | Treinado em treino + validação e avaliado na validação | Reproduzido no teste anti-vazamento; honesto: PR-AUC de 0,555 |
+| 4 | ClusterCentroids no treino | Descartava **82%** dos funcionários que ficaram | 4 estratégias comparadas; **sem balanceamento** venceu, com o limiar tratando o desbalanceamento |
+| 5 | GridSearch pela acurácia, 2.800 combinações, 30 minutos | Métrica errada; parâmetros inválidos (`bootstrap='False'` em texto) | `RandomizedSearchCV` pela PR-AUC, 30 combinações, 19 segundos |
+| 6 | Limiar fixo em 0,50 | Encontra só 32% das saídas | Limiar de **0,34** pelo custo, escolhido na validação |
+| 7 | "214 funcionários = US$ 1.636.030" | Conta sem base (acurácia × 500) | Economia de **32,8%** no teste, com a premissa explícita e a sensibilidade |
+| 8 | Taxas tratadas como salário | Não têm relação com o salário | Fora do modelo (H12) |
+| 9 | Gênero no modelo | Atributo sensível | Fora do modelo; justiça conferida por grupo |
+| 10 | Dois notebooks, hipóteses só com gráficos | Preparação repetida; efeito real não diferenciado do acaso | Um notebook CRISP-DM com **13 hipóteses** testadas e tamanho do efeito |
+| 11 | Sem testes nem registro das decisões | — | `src/`, **16 testes** no GitHub Actions, `docs/decisoes_analiticas.md`, ficha do modelo e app |
 
-**5º Gráfico:**
+## 12. Insights
 
-<div align="center">
-<img src="Imagens/Estado_civil_empresa.png" width="700px">
-</div>
-</br>
+1. **Comparar sempre com o chute:** a acurácia de 84% da v1 era o acerto de quem diz que ninguém sai.
+2. **Júnior com hora extra é o grupo de maior risco** (52,6% saem): rever a carga de trabalho é a ação mais direta.
+3. **Ficar muito tempo sem promoção pesa, com o resto igual** (1,63x a chance), embora sozinho pareça irrelevante.
+4. **Representantes de vendas saem 39,8% das vezes**, mais que o dobro da média.
+5. **Balancear piorou:** o peso da classe distorceu as probabilidades, e o ClusterCentroids jogou fora dados.
+6. **Com poucos dados, o modelo simples venceu:** a Regressão Logística superou as árvores e é a mais fácil de explicar.
+7. **Abordando 10% dos funcionários, o RH encontra 43% das saídas.**
+8. **Atributos sensíveis fora:** sem o gênero, o modelo perdeu nada relevante.
 
-**Nota:**
+## 13. Limites
 
-- As pessoas que tem chance em sair da empresa são solteiras (o) que em relação ao total de pessoas que tem a chance em sair da empresa corresponde a 50%.
+- **Base fictícia** (IBM): as conclusões valem para esta base; numa empresa real, o modelo precisa ser retreinado.
+- **Base pequena:** com 47 saídas no teste, o recall fica entre 34% e 64% (IC 95%).
+- **Fotografia, não filme:** sem datas, o modelo aponta associação, não causa.
+- **Aposentadorias** não são previstas.
+- **Premissa de custo:** a economia supõe que a conversa evita a saída.
+- **Uso ético:** priorizar conversas de retenção, nunca punir ou desligar.
 
+## 14. Próximos passos
 
-<br>
-
-# _6. Modelos de Machine Learning_
-
-_**Foi usado dois algoritmos para construir o modelo de classificação:**_
-
-1. Regressão logística.
-2. Random forest.
-
-_**Comparação dos modelos de machine Learning:**_
-
-<div align="center">
-<img src="Imagens/ComparacaoModelo_HP.PNG" width="600px">
-</div>
-</br>
-
-**Nota:**
-
-Legenda: HP - Hiperparâmetros (significa que o modelo passou por otimização de hiperparâmetros)
-
-- O modelo **Random Forest - HP**, mostra que teve um Overfitting, ou seja, o algoritmo não consegue apreender um comportamento, não é capaz de generalizar que é a capacidade de acertar os dados que ele nunca viu.
-- O modelo **Regressão Logistica - HP**	mostrou uma capacidade de generalização.
-
-**Um ponto importante:** Estamos trabalhando com um Conjunto de Dados Pequeno, porque quanto mais dados significa que mais informações estou passando para o algoritmo treinar.
-
-_**Modelo final:**_
-
-<div align="center">
-<img src="Imagens/ComparacaoModelo_Final.PNG" width="600px">
-</div>
-</br>
-
-**Nota:**
-
-- Como o contexto de negócio é classificar **a probabilidade de ficar na empresa ou de sair**, então vamos escolher o algoritmo de **Regressão Logistica**, porque toda vez que fazer uma classificação utilizando esta base de dados, nós temos **84%** de chance em acertar está classificação.
-
-<br>
-
-# _7. Performance do Modelo de Machine Learning_
-
-- Contratar e reter funcionários são tarefas extremamente complexas que exigem capital, tempo e habilidades e a contratação de um novo funcionário custa em média **$7.645**, segundo a fonte mencionada no contexto de negócio.
-
-- Então usando o modelo de classificação podemos identificar cerca de **84%** de chance em acertar está classificação, mas com uma precisão de **51%** surgindo uma oportunidade para o departamento de RH reduzir um desperdício de contratação.
-
-<div align="center">
-<img src="Imagens/NegocioTabela.PNG" width="200px">
-</div>
-</br>
-
-<br>
-
-# _8. Conclusão_
-
-E o resultado desta solução, caso fosse implementada e aplicando o modelo podemos identificar sobre os 500 funcionários, 214 colaboradores com chance em sair da empresa, surgindo uma oportunidade para o RH em reduzir um desperdício de contratação de $1.636.030.
-
-<br>
-
-# _9. Próximos passos_
-
-- Coletar mais informações para que o algoritmo possa aprender um comportamento das pessoas que tem a probabilidade em sair da empresa.
-
-- Gerar novas features (Características), para alcançar um equilibrio e para manter o algoritmo complexo suficiente para ele entedener o comportamento, mas não tão complexo ao ponto dele decorar.
+1. Retreinar com **dados reais e datas**, separando pedidos de demissão de aposentadorias e prevendo **quando** a saída acontece.
+2. **Medir o efeito da conversa** de retenção com um teste controlado.
+3. Acompanhar a **justiça do modelo** por gênero, idade e cargo a cada retreino.
+4. Publicar o app no Streamlit Community Cloud.
