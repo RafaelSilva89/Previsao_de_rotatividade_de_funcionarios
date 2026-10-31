@@ -12,6 +12,7 @@ from src.avaliacao import (bootstrap_metricas, calcular_metricas_completas, curv
 from src.config import ARQUIVO_BASE, CATEGORICAS, FEATURES, SEM_INFORMACAO, TAXAS
 from src.dados import carregar_base, colunas_sem_informacao, criar_variaveis, funcionario_para_modelo, preparar_base
 from src.estatistica import odds_ratio, teste_mann_whitney, teste_qui_quadrado
+from src.monitoramento import psi, relatorio_drift
 
 
 @pytest.fixture(scope='module')
@@ -115,3 +116,28 @@ def test_explicar_previsao_divide_a_diferenca_entre_as_variaveis():
     assert explicacao['efeito_log_chance'].sum() == pytest.approx(diferenca)
     assert np.allclose(explicacao['multiplicador'], np.exp(explicacao['efeito_log_chance']))
     assert explicar_previsao(modelo, entrada, referencia, n=1)['variavel'].tolist() == [explicacao['variavel'].iloc[0]]
+
+
+# --- Monitoramento (data drift) ---
+
+def test_psi_igual_perto_de_zero_e_deslocado_severo():
+    rng = np.random.default_rng(0)
+    referencia = rng.normal(0, 1, 5000)
+    assert psi(referencia, rng.normal(0, 1, 5000)) < 0.02
+    assert psi(referencia, rng.normal(1, 1, 5000)) > 0.25
+
+
+def test_psi_variavel_binaria():
+    assert psi(np.r_[np.zeros(700), np.ones(300)], np.r_[np.zeros(700), np.ones(300)]) < 0.001
+    assert psi(np.r_[np.zeros(700), np.ones(300)], np.r_[np.zeros(300), np.ones(700)]) > 0.25
+
+
+def test_relatorio_drift_aponta_a_coluna_que_mudou():
+    rng = np.random.default_rng(1)
+    referencia = pd.DataFrame({'a': rng.normal(0, 1, 2000), 'b': rng.normal(0, 1, 2000)})
+    novo = pd.DataFrame({'a': rng.normal(0, 1, 2000), 'b': rng.normal(2, 1, 2000)})
+    relatorio = relatorio_drift(referencia, novo, ['a', 'b'])
+    assert relatorio.index[0] == 'b'
+    assert relatorio.loc['b', 'Status (PSI)'] == 'drift severo: retreinar'
+    assert relatorio.loc['a', 'Status (PSI)'] == 'estável'
+    assert bool(relatorio.loc['b', 'K-S indica mudança'])

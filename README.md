@@ -8,7 +8,7 @@
 
 [![Testes](https://github.com/RafaelSilva89/Previsao_de_rotatividade_de_funcionarios/actions/workflows/testes.yml/badge.svg)](https://github.com/RafaelSilva89/Previsao_de_rotatividade_de_funcionarios/actions/workflows/testes.yml)
 
-**Python · Pandas · Scikit-learn · Regressão Logística · XGBoost · LightGBM · SciPy · Pytest · GitHub Actions · Streamlit · CRISP-DM**
+**Python · Pandas · Scikit-learn · Regressão Logística · XGBoost · LightGBM · Optuna · SHAP · SciPy · Pytest · GitHub Actions · Streamlit · CRISP-DM**
 
 | 📊 Destaques | |
 |---|---|
@@ -17,7 +17,8 @@
 | Modelo | Abordando as **30 pessoas** de maior risco (10% do teste), o RH encontra **20 das 47 saídas**: **4x mais** que ao acaso |
 | Resultado em dólares | Com o limiar escolhido pelo custo, a empresa gasta **32,8% menos** com reposição no teste (US$ 117.733), numa premissa de custo explícita |
 | Qualidade | A v2 mostrou que a **acurácia de 84% da v1 era o acerto de quem chuta "todo mundo fica"**, que o "Random Forest com 100%" foi avaliado em dados já vistos, e **tirou o gênero do modelo** sem perda de desempenho |
-| Entrega | Notebook CRISP-DM, **16 testes automatizados** (GitHub Actions) e **app Streamlit** com o risco de cada funcionário e a lista de prioridade do RH |
+| Ajuste e explicação | **Grid Search, Random Search e otimização Bayesiana (Optuna)** comparados nas mesmas 5 dobras; **SHAP** explica por que cada pessoa foi apontada; **curvas ROC e Precision-Recall**; **monitoramento de drift** (PSI e K-S) com SLA |
+| Entrega | Notebook CRISP-DM, **19 testes automatizados** (GitHub Actions) e **app Streamlit** com o risco de cada funcionário e a lista de prioridade do RH |
 
 ---
 
@@ -96,9 +97,11 @@ Previsao_de_rotatividade_de_funcionarios/
 │   ├── estatistica.py                  # testes das hipóteses (com tamanho do efeito) e regra do IQR
 │   ├── selecao.py                      # seleção de variáveis (Random Forest + Informação Mútua)
 │   ├── avaliacao.py                    # métricas, limiar, custo, ganho sobre o acaso, bootstrap, ficha e explicação de cada previsão
+│   ├── otimizacao.py                   # comparação Grid Search x Random Search x Bayesiana (Optuna)
+│   ├── monitoramento.py                # data drift: PSI e teste K-S
 │   └── graficos.py                     # gráficos e formatação em português
 ├── tests/
-│   ├── test_funcoes.py                 # 12 testes das funções de src/
+│   ├── test_funcoes.py                 # 15 testes das funções de src/
 │   └── test_app.py                     # 4 testes do app (AppTest do Streamlit)
 ├── .github/workflows/testes.yml        # roda os testes a cada push (GitHub Actions)
 ├── app.py                              # app Streamlit
@@ -133,9 +136,9 @@ streamlit run app.py
 |---|---|
 | **01. Entendimento do negócio** | Definição das 4 perguntas e da premissa de custo |
 | **02. Preparação dos dados** | Tradução da base, colunas sem informação, inconsistências, outliers pela regra do IQR e EDA com 13 hipóteses (cada uma com teste estatístico e tamanho do efeito) |
-| **03. Modelagem** | Divisão 60/20/20 estratificada, 4 estratégias de balanceamento, seleção de variáveis, 5 algoritmos com validação cruzada, ajuste fino, limiar pelo custo, calibração e teste anti-vazamento |
-| **04. Avaliação** | Resultado no teste com intervalo de confiança, em dólares e por grupo (departamento, hora extra, gênero), e variáveis mais importantes |
-| **05. Implantação** | Modelo salvo com ficha, simulação de perfis, curva "modelo × sorteio" e app Streamlit |
+| **03. Modelagem** | Divisão 60/20/20 estratificada, 4 estratégias de balanceamento, seleção de variáveis, 5 algoritmos com validação cruzada, ajuste fino com Grid, Random e Bayesiana, limiar pelo custo, calibração e teste anti-vazamento |
+| **04. Avaliação** | Resultado no teste com intervalo de confiança, em dólares e por grupo (departamento, hora extra, gênero), curvas ROC e Precision-Recall, e variáveis mais importantes (permutação e SHAP) |
+| **05. Implantação** | Modelo salvo com ficha, simulação de perfis, curva "modelo × sorteio", monitoramento de drift com SLA e app Streamlit |
 
 ## 7. Principais descobertas da análise exploratória
 
@@ -170,12 +173,28 @@ streamlit run app.py
 | **Balanceamento** | Comparamos 4 estratégias. **Sem balanceamento** venceu (PR-AUC de 0,638 contra 0,597 com peso da classe) e manteve as probabilidades realistas. O ClusterCentroids da v1, que descartava 82% dos dados, foi o pior |
 | **Variáveis** | 29: sem as 3 "taxas" (ruído), com 3 criadas (satisfação média, anos por empresa, fração da carreira na empresa) e **sem o gênero** (atributo sensível; veja abaixo) |
 | **Algoritmos** | Regressão Logística, Naive Bayes, Random Forest, XGBoost e LightGBM, com validação cruzada de 5 dobras × 3 repetições |
+| **Ajuste fino** | Grid Search, Random Search e Bayesiana (Optuna) comparados (tabela abaixo): **empate técnico**; o Random Search ficou (C = 0,18, L2) |
 | **Escolha** | **Regressão Logística** ajustada: PR-AUC de **0,648 ± 0,046**, contra 0,564 do segundo colocado. As árvores decoravam o treino |
 | **Limiar** | **0,34**, o de menor custo na validação: repor custa US$ 7.645 e abordar custa 1/5 disso |
 | **Anti-vazamento** | Avaliado em dados já vistos, o Random Forest tira **100%** em tudo; de forma honesta, PR-AUC de **0,555** |
 
 <div align="center">
 <img src="Imagens/Curva de custo.png" width="700px">
+</div>
+
+### Ajuste fino: Grid Search x Random Search x Bayesiana
+
+| Método | Como escolhe | PR-AUC (validação cruzada) | Custo |
+|---|---|---|---|
+| Sem ajuste (C = 1) | — | 0,654 ± 0,060 | — |
+| **Grid Search** | 11 valores de C x L1/L2 (todas as 22 combinações) | 0,664 ± 0,049 | 110 modelos, 19 s |
+| **Random Search** | 30 combinações sorteadas, C contínuo | **0,664 ± 0,054** | 150 modelos, **11 s** |
+| **Bayesiana (Optuna)** | 30 tentativas guiadas, com a mistura L1/L2 (*elastic net*) | 0,661 ± 0,047 | 150 modelos, 65 s |
+
+Os três chegam à mesma resposta (regularização L2 mais forte que a padrão) e ficam a 0,003 um do outro, 1/20 do desvio entre as dobras. Com só 2 hiperparâmetros, o método mais simples basta; a Bayesiana compensa em espaços grandes e modelos caros. O modelo e o limiar não mudaram.
+
+<div align="center">
+<img src="Imagens/Grid search.png" width="650px">
 </div>
 
 ### ⚖️ Por que o gênero ficou fora do modelo (e quanto isso custou)
@@ -211,6 +230,14 @@ Na base, homens e mulheres saem na mesma proporção (17,0% e 14,8%; H13). Mesmo
 <img src="Imagens/Odds ratio regressao logistica.png" width="650px">
 </div>
 
+**Por que cada pessoa foi apontada (SHAP):** o SHAP parte do risco médio e soma a contribuição de cada variável até o risco daquela pessoa. A **hora extra** domina (com o resto igual, a chance de quem faz é ~5 vezes a de quem não faz), seguida de **anos sem promoção** e **anos por empresa**. Exemplo: o representante de vendas de 21 anos com 97% de risco soma hora extra (+1,16), idade (+0,58) e insatisfação com o ambiente (+0,40), além de muitos sinais pequenos. As 24 saídas não previstas quase não se movem do risco médio: o modelo não tem sinal para elas. Mesmo sem gênero, o risco médio previsto ficou em 17,0% para mulheres e 14,7% para homens (taxas reais: 13,8% e 17,4%), dentro da incerteza, mas registrado para acompanhar.
+
+<div align="center">
+<img src="Imagens/SHAP waterfall saiu.png" width="650px">
+</div>
+
+**Monitoramento:** as entradas novas são comparadas com as do treino (**PSI** e **K-S**) e a PR-AUC tem um **SLA** de 0,47. Numa simulação em que a hora extra passa de 26% para 63% dos funcionários, o PSI marca mudança forte (0,50) e o número de apontados quase dobra (38 → 71).
+
 ## 10. App interativo (Streamlit)
 
 O app tem 3 abas:
@@ -234,13 +261,13 @@ Os dois notebooks originais foram mantidos em `Notebooks/` para mostrar a evolu�
 | 2 | Encoder e scaler reajustados na validação e no teste; `.pkl` salvo com os ajustados no teste | Cada conjunto numa escala; o app aplicaria outra transformação | Tudo num `Pipeline` ajustado só no treino |
 | 3 | Random Forest com **100%** em tudo | Treinado em treino + validação e avaliado na validação | Reproduzido no teste anti-vazamento; honesto: PR-AUC de 0,555 |
 | 4 | ClusterCentroids no treino | Descartava **82%** dos funcionários que ficaram | 4 estratégias comparadas; **sem balanceamento** venceu, com o limiar tratando o desbalanceamento |
-| 5 | GridSearch pela acurácia, 2.800 combinações, 30 minutos | Métrica errada; parâmetros inválidos (`bootstrap='False'` em texto) | `RandomizedSearchCV` pela PR-AUC, 30 combinações, 19 segundos |
+| 5 | GridSearch pela acurácia, 2.800 combinações, 30 minutos | Métrica errada; parâmetros inválidos (`bootstrap='False'` em texto) | Grid, Random e Bayesiana comparados pela PR-AUC; Random Search com 30 combinações em 11 segundos |
 | 6 | Limiar fixo em 0,50 | Encontra só 32% das saídas | Limiar de **0,34** pelo custo, escolhido na validação |
 | 7 | "214 funcionários = US$ 1.636.030" | Conta sem base (acurácia × 500) | Economia de **32,8%** no teste, com a premissa explícita e a sensibilidade |
 | 8 | Taxas tratadas como salário | Não têm relação com o salário | Fora do modelo (H12) |
 | 9 | Gênero no modelo | Atributo sensível | Fora do modelo; justiça conferida por grupo |
 | 10 | Dois notebooks, hipóteses só com gráficos | Preparação repetida; efeito real não diferenciado do acaso | Um notebook CRISP-DM com **13 hipóteses** testadas e tamanho do efeito |
-| 11 | Sem testes nem registro das decisões | — | `src/`, **16 testes** no GitHub Actions, `docs/decisoes_analiticas.md`, ficha do modelo e app |
+| 11 | Sem testes nem registro das decisões | — | `src/`, **19 testes** no GitHub Actions, `docs/decisoes_analiticas.md`, ficha do modelo e app |
 
 ## 12. Insights
 
@@ -252,6 +279,7 @@ Os dois notebooks originais foram mantidos em `Notebooks/` para mostrar a evolu�
 6. **Com poucos dados, o modelo simples venceu:** a Regressão Logística superou as árvores e é a mais fácil de explicar.
 7. **Abordando 10% dos funcionários, o RH encontra 43% das saídas.**
 8. **Atributos sensíveis fora:** sem o gênero, o modelo perdeu nada relevante.
+9. **Mais ajuste não é melhor modelo:** Grid, Random e Bayesiana empatam; com poucos hiperparâmetros, a escolha do método de busca importa pouco.
 
 ## 13. Limites
 

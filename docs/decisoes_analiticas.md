@@ -19,6 +19,9 @@ Os números vêm das saídas do notebook [`Notebooks/Previsão de rotatividade d
 | [DA-09](#da-09--regressão-logística-escolhida-pela-validação-cruzada) | Regressão Logística escolhida pela validação cruzada |
 | [DA-10](#da-10--limiar-pelo-custo-escolhido-na-validação) | Limiar pelo custo, escolhido na validação |
 | [DA-11](#da-11--avaliação-honesta-e-teste-anti-vazamento) | Avaliação honesta e teste anti-vazamento |
+| [DA-12](#da-12--três-métodos-de-busca-comparados-random-search-mantido) | Três métodos de busca comparados; Random Search mantido |
+| [DA-13](#da-13--shap-com-linearexplainer-e-auditoria-de-proxies-do-gênero) | SHAP com LinearExplainer e auditoria de proxies do gênero |
+| [DA-14](#da-14--monitoramento-por-psi-k-s-e-sla-sem-backtest-no-tempo) | Monitoramento por PSI, K-S e SLA; sem backtest no tempo |
 
 ---
 
@@ -109,3 +112,27 @@ Os números vêm das saídas do notebook [`Notebooks/Previsão de rotatividade d
 - **Alternativas consideradas:** nenhuma razoável.
 - **Consequência:** o mesmo Random Forest tem PR-AUC de 0,555 na avaliação honesta, contra 1,000 com vazamento.
 - **Onde está:** item 9 da Fase 03.
+
+## DA-12 — Três métodos de busca comparados; Random Search mantido
+
+- **Contexto:** o ajuste fino usava só o Random Search. Comparamos Grid Search (11 valores de C x L1/L2, 22 combinações), Random Search (30 combinações, C contínuo) e otimização Bayesiana com Optuna (TPE, 30 tentativas, com a mistura L1/L2 via `l1_ratio` contínuo e solver `saga`), nas mesmas 5 dobras estratificadas do treino e pela PR-AUC. Resultado: 0,664 ± 0,049, 0,664 ± 0,054 e 0,661 ± 0,051, contra 0,654 do modelo padrão.
+- **Decisão:** regra definida antes da busca: um método novo só substitui o Random Search se ganhar por mais que o desvio entre as dobras. O Random Search teve a maior PR-AUC e **continua** (C = 0,18, L2).
+- **Alternativas consideradas:** o Grid (mesmo resultado, 19 s, a escolha natural para 2 hiperparâmetros); a Bayesiana com *elastic net* (a mistura não melhorou e o `saga` é 6 vezes mais lento).
+- **Consequência:** modelo, limiar (0,34) e app iguais aos da versão anterior; a ficha registra o método de ajuste. O `penalty` (obsoleto no scikit-learn 1.8) foi trocado por `l1_ratio` (0 = L2, 1 = L1), com os mesmos modelos.
+- **Onde está:** itens 7.1 a 7.4 da Fase 03; `src/otimizacao.py`; `Model/modelo_rotatividade.json`.
+
+## DA-13 — SHAP com LinearExplainer e auditoria de proxies do gênero
+
+- **Contexto:** os odds ratio dão o efeito médio de cada variável, mas não explicam por que uma pessoa específica foi apontada; e o gênero, fora do modelo, pode entrar por outras variáveis.
+- **Decisão:** SHAP com o **LinearExplainer** (exato para modelos lineares), com o treino + validação como referência, no teste. Mostramos a importância global, a direção do efeito, o waterfall de quem saiu com o maior risco e do alarme falso de maior risco, o decision plot das saídas não previstas e a contribuição média por gênero.
+- **Alternativas consideradas:** KernelExplainer (aproximado e lento, sem necessidade num modelo linear); só os odds ratio (não explicam casos individuais).
+- **Consequência:** a soma das contribuições bate com o log-odds (diferença de 2 x 10⁻¹⁵); a hora extra domina; cargo e departamento dividem a mesma informação. Sem gênero no modelo, o risco médio previsto é de 17,0% para mulheres e 14,7% para homens (taxas reais: 13,8% e 17,4%), puxado por anos com o gestor, anos por empresa e estado civil. Com 16 e 31 saídas, está dentro da incerteza; fica como item de monitoramento.
+- **Onde está:** item 3 da Fase 04.
+
+## DA-14 — Monitoramento por PSI, K-S e SLA; sem backtest no tempo
+
+- **Contexto:** a base é um retrato sem datas de saída, então não há como fazer um backtest no tempo (walk-forward). Em produção, o perfil dos funcionários e a relação com a saída podem mudar.
+- **Decisão:** monitorar as entradas com **PSI** e **K-S** (referência: treino + validação) e a PR-AUC com um **SLA** de 0,47 (limite inferior do intervalo de 95% do teste), em janelas trimestrais, além do risco previsto x taxa real por gênero.
+- **Alternativas consideradas:** walk-forward (exige datas); lotes pequenos (com ~16 saídas por lote, a PR-AUC oscila de 0,54 a 0,67 no mesmo período).
+- **Consequência:** treino x teste estável (PSI ≤ 0,059); na simulação com hora extra de 26% para 63%, PSI de 0,50 e apontados de 38 para 71; num concept drift simulado, a PR-AUC cai para 0,18 e o alerta dispara.
+- **Onde está:** item 3 da Fase 05; `src/monitoramento.py`.

@@ -1,5 +1,5 @@
 {
-  "data_treino": "2026-10-24 18:05",
+  "data_treino": "2026-10-30 21:03",
   "modelo": "Regressão Logística ajustado, sem balanceamento (Pipeline: one-hot + padronização + modelo)",
   "arquivo": "modelo_rotatividade.pkl",
   "treinado_com": "1.176 funcionários (treino + validação). 190 saídas",
@@ -70,9 +70,10 @@
   },
   "hiperparametros": {
     "C": 0.17885301261862016,
-    "penalty": "l2",
+    "l1_ratio": 0.0,
     "solver": "liblinear"
   },
+  "metodo_de_ajuste": "Random Search (maior PR-AUC na validação cruzada de 5 dobras do treino)",
   "avisos": [
     "Base fictícia (IBM): as conclusões valem para esta base, não para uma empresa real.",
     "O modelo aponta associação, não causa: hora extra alta pode ser sintoma, não motivo.",
