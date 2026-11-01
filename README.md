@@ -130,6 +130,27 @@ jupyter notebook "Notebooks/Previsão de rotatividade de funcionários - v2.ipyn
 streamlit run app.py
 ```
 
+### ⏱️ Tempo de execução do notebook
+
+A execução completa leva **cerca de 6 minutos**. Tempo de cada etapa:
+
+| Etapa | Tempo |
+|---|---|
+| Fases 01 e 02: entendimento, limpeza e hipóteses | 0,6 min |
+| Fase 03: balanceamento (comparação das técnicas) | 1,3 min |
+| Fase 03: comparação dos modelos (validação cruzada) | ~1 min |
+| Fase 03: 7.1 Grid Search | 0,4 min |
+| Fase 03: 7.2 Random Search | < 0,3 min |
+| Fase 03: 7.3 Otimização Bayesiana (Optuna) | 1,1 min |
+| Fase 03: comparação dos métodos, modelo final e limiar | < 1 min |
+| Fase 04: avaliação, curvas ROC/PR, permutação e SHAP | 0,8 min |
+| Fase 05: modelo de produção, simulação, monitoramento e app | < 0,1 min |
+| **Total** | **5,6 min** |
+
+A base é pequena (1.470 funcionários) e o modelo é linear: o notebook inteiro roda rápido.
+
+Medido na execução completa de 30/10/2026, num notebook com Intel Core i3-4005U (2 núcleos, 1,7 GHz) e 8 GB de RAM, com o kernel em Python 3.13. Num computador mais novo o tempo cai bastante, mas a proporção entre as etapas se mantém.
+
 ## 6. Etapas do projeto (CRISP-DM)
 
 | Fase | O que foi feito |
