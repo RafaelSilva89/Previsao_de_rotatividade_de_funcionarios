@@ -289,6 +289,23 @@ Os dois notebooks originais foram mantidos em `Notebooks/` para mostrar a evolu�
 | 9 | Gênero no modelo | Atributo sensível | Fora do modelo; justiça conferida por grupo |
 | 10 | Dois notebooks, hipóteses só com gráficos | Preparação repetida; efeito real não diferenciado do acaso | Um notebook CRISP-DM com **13 hipóteses** testadas e tamanho do efeito |
 | 11 | Sem testes nem registro das decisões | — | `src/`, **19 testes** no GitHub Actions, `docs/decisoes_analiticas.md`, ficha do modelo e app |
+| 12 | Sem explicação nem monitoramento | Não dizia por que cada pessoa foi apontada nem quando o modelo envelhece | **SHAP** de cada pessoa, curvas **ROC e PR** e monitoramento (**PSI**, **K-S** e SLA) |
+
+### 📊 Resultado: v1 × v2
+
+Métricas da classe **"saiu"**, no teste (294 funcionários, 47 saídas):
+
+| Métrica | v1 (limiar 0,50) | v2 (limiar 0,34) | Melhor |
+|---|---|---|---|
+| Precisão (dos apontados, quantos saem) | 51% | **60,5%** | v2 |
+| Recall (saídas encontradas) | **53%** | 48,9% | v1 |
+| F1 | 52% | **54,1%** | v2 |
+| Acurácia | 84% | **86,7%** | v2 |
+| PR-AUC | não calculada | **0,587** | v2 |
+| Economia contra não usar o modelo | não calculada | **32,8%** | v2 |
+
+- ⚖️ **A comparação é justa?** Ela favorece a v1: os números da v1 vêm de um encoder e um scaler ajustados no **próprio teste**, e a acurácia de 84% é a mesma de quem chuta "todo mundo fica" (84,0%). A v1 encontra um pouco mais de saídas, mas, com só 47 saídas no teste, a diferença de recall e de F1 entre as versões fica dentro da incerteza.
+- 🏆 **Veredito:** v2. O mesmo nível de F1, agora com avaliação honesta, probabilidades calibradas (Brier de **0,099**, contra 0,134 de quem chuta), limiar escolhido pelo custo e sem o gênero no modelo.
 
 ## 12. Insights
 
